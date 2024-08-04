@@ -3,11 +3,14 @@ package fastcampus.part2.mapapp
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import com.naver.maps.map.NaverMap
+import com.naver.maps.map.OnMapReadyCallback
 import fastcampus.part2.mapapp.databinding.ActivityMainBinding
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private lateinit var binding: ActivityMainBinding
+    private lateinit var naverMap: NaverMap
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -17,6 +20,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         binding.mapView.onCreate(savedInstanceState)
+
+        binding.mapView.getMapAsync(this)
     }
 
     override fun onStart() {
@@ -52,6 +57,10 @@ class MainActivity : AppCompatActivity() {
     override fun onLowMemory() {
         super.onLowMemory()
         binding.mapView.onLowMemory()
+    }
+
+    override fun onMapReady(mapObject: NaverMap) {
+        naverMap = mapObject
     }
 
 }
