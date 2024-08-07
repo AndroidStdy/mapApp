@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView.OnQueryTextListener
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.naver.maps.geometry.LatLng
 import com.naver.maps.geometry.Tm128
 import com.naver.maps.map.CameraAnimation
@@ -24,6 +25,12 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var naverMap: NaverMap
     private var isMapInit = false
 
+    private var restaurantListAdapter = RestaurantListAdapter {
+        // 카메라 움직임
+
+        moveCamera(it)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -35,7 +42,10 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
         binding.mapView.getMapAsync(this)
 
-        binding.bottomSheetLayout.searchResultRecyclerView
+        binding.bottomSheetLayout.searchResultRecyclerView.apply {
+            layoutManager = LinearLayoutManager(context)
+            adapter = restaurantListAdapter
+        }
 
         binding.searchView.setOnQueryTextListener(object : OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
@@ -49,30 +59,40 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                             ) {
                                 val searchItemList = response.body()?.items.orEmpty()
 
-                                if(searchItemList.isEmpty()){
-                                    Toast.makeText(this@MainActivity,"검색 결과가 없습니다.",Toast.LENGTH_SHORT).show()
+                                if (searchItemList.isEmpty()) {
+                                    Toast.makeText(
+                                        this@MainActivity,
+                                        "검색 결과가 없습니다.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                     return
-                                }else if(isMapInit.not()){
-                                    Toast.makeText(this@MainActivity,"오류가 발생했습니다.",Toast.LENGTH_SHORT).show()
+                                } else if (isMapInit.not()) {
+                                    Toast.makeText(
+                                        this@MainActivity,
+                                        "오류가 발생했습니다.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 }
 
-                                val markers = searchItemList.map{
+                                val markers = searchItemList.map {
                                     //API스펙 변경됨
 //                                    Marker(Tm128(it.mapx.toDouble(), it.mapy.toDouble()).toLatLng()).apply {
 //                                        captionText = it.title
 //                                        map = naverMap
 //                                    }
-                                    val latLng = LatLng(it.mapy.toDouble() / 10000000, it.mapx.toDouble() / 10000000)  //위도, 경도
+                                    val latLng = LatLng(
+                                        it.mapy.toDouble() / 10000000,
+                                        it.mapx.toDouble() / 10000000
+                                    )  //위도, 경도
                                     Marker(latLng).apply {
                                         captionText = it.title
                                         map = naverMap
                                     }
 
                                 }
-                                val cameraUpdate = CameraUpdate.scrollTo(markers.first().position)
-                                    .animate(CameraAnimation.Easing)
-                                naverMap.moveCamera(cameraUpdate)
+                                restaurantListAdapter.setData(searchItemList)
 
+                                moveCamera(markers.first().position)
 
                             }
 
@@ -82,7 +102,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
                         })
                     false
-                }else{
+                } else {
                     true
                 }
             }
@@ -92,6 +112,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
             }
 
         })
+    }
+    private fun moveCamera(position:LatLng){
+        if(isMapInit.not()) return
+
+        val cameraUpdate = CameraUpdate.scrollTo(position)
+            .animate(CameraAnimation.Easing)
+        naverMap.moveCamera(cameraUpdate)
     }
 
     override fun onStart() {
